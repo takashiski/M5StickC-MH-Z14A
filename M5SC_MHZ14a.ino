@@ -9,13 +9,14 @@
 #define RED_LED_PIN 10
 #define M_PRESS_TIME 5000
 
-int height,width;
-bool flag_press_M_button;
-int press_time;
+int height,width,co2;
+bool press_side_button,press_M_button;
+int press_side_time;
 
 void setup() {
-  flag_press_M_button=false;
+  press_side_button=false;
   pinMode(M_BUTTON_PIN,INPUT);
+  pinMode(SIDE_BUTTON_PIN,INPUT);
   
   M5.begin();
   height=M5.Lcd.height();
@@ -24,7 +25,6 @@ void setup() {
   M5.Lcd.setTextWrap(true);
   M5.Lcd.setTextColor(0xFFFF,0x0000);
   M5.Lcd.setTextSize(5);
-  M5.Lcd.println("HELLO");
   
   Serial.begin(115200);
   Serial.println("Start");
@@ -40,48 +40,56 @@ void setup() {
   }
 //  co2sensor.calibrate();
   M5.Lcd.fillScreen(0x0000);
-  delay(1000);
-
+  M5.Lcd.println("HELLO");
+  delay(3000);
+  M5.Axp.SetLDO2(false);
+  delay(3000);
 }
 
 void loop() {
 
-  if(!flag_press_M_button)
+  if(!press_side_button)
   {
-    flag_press_M_button=!digitalRead(M_BUTTON_PIN);
-    if(flag_press_M_button)
+    press_side_button=!digitalRead(SIDE_BUTTON_PIN);
+    press_M_button=!digitalRead(M_BUTTON_PIN);
+    co2=co2sensor.read();
+    if(press_side_button)
     {
+      M5.Axp.SetLDO2(true);
       M5.Lcd.fillScreen(0x0000);
       M5.Lcd.setCursor(0,0);
       M5.Lcd.print("PRESSED");
-      press_time=millis();
+      press_side_time=millis();
     }
-    else
+    else if(press_M_button)
     {
+      M5.Axp.SetLDO2(true);
       M5.Lcd.fillScreen(0x0000);
-      int co2=co2sensor.read();
       M5.Lcd.setCursor(0,0);
       M5.Lcd.print(co2);
+      delay(3000);
+      M5.Axp.SetLDO2(false);
     }
   }
   else
   {
-    flag_press_M_button=!digitalRead(M_BUTTON_PIN);
-    if(flag_press_M_button&&millis()-press_time>M_PRESS_TIME)
+    press_side_button=!digitalRead(M_BUTTON_PIN);
+    if(press_side_button&&millis()-press_side_time>M_PRESS_TIME)
     {
       M5.Lcd.fillScreen(0x0000);
       M5.Lcd.setCursor(0,0);
       M5.Lcd.print("CALIBRATE");
-      flag_press_M_button=false;
-      press_time=millis();
+      press_side_button=false;
+      press_side_time=millis();
       co2sensor.calibrate();
       delay(3000);
       M5.Lcd.fillScreen(0x0000);
       M5.Lcd.setCursor(0,0);
       M5.Lcd.print("FINISH");
       delay(3000);
+      M5.Axp.SetLDO2(false);
     }
   }
-  delay(15000);
+  delay(100);
 
 }
